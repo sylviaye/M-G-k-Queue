@@ -1,0 +1,79 @@
+---
+title: "M/G/k Queue"
+author: "Ziyi(Sylvia) Ye"
+date: "2017/9/25"
+output: html_document
+---
+
+```{r}
+myfun<-function(lambda, min_serve_time, max_serve_time, server_number, total_time){
+  
+  # simulate arrival.
+  it = rexp(1000,lambda)
+  # calculate arrival time.
+  at = cumsum(it)
+  # num : the number of patients who get service
+  i=1
+  while(at[i]<total_time){
+    n_p=i
+    i=i+1
+  }
+  at = at[0:n_p]
+
+  # generate queueing time, qt, 
+  # and the exit time of 3 services, exit.
+  qt = c(rep(0,n_p))
+  exit = matrix(rep(0,n_p*server_number),nrow = server_number)
+
+  #state : arriving time,service time,waiting time, queue length,   leaving time
+  state = list(arr_time = at, serve_time = runif(n_p,min_serve_time,max_serve_time),
+               waiting_time = c(rep(0,n_p)), 
+               leaving_time = c(rep(0,n_p)))
+
+  #The first patients group
+  for(i in 1:server_number){
+    state$leaving_time[i] = state$arr_time[i]+state$serve_time[i]
+  }
+
+  #create a vector to store leaving time of customers which is in   service
+  serv_desk=state$leaving_time[1:server_number]
+
+  #simulation
+  for(i in (server_number+1):n_p) {
+    if(state$arr_time[i] > min(serv_desk)){
+      state$waiting_time[i]=0
+    }else{
+      state$waiting_time[i]=min(serv_desk)-state$arr_time[i]
+    }
+    state$leaving_time[i]=state$arr_time[i]+state$serve_time[i]+state$waiting_time[i]
+    for(j in 1:server_number){
+      if(serv_desk[j] == min(serv_desk)){
+        serv_desk[j]=state$leaving_time[i]
+        break
+      }
+    }
+  }
+
+  need_to_wait = 0
+  for(i in 1:n_p){
+    if(state$waiting_time[i]>0){
+      need_to_wait = need_to_wait + 1
+    }
+  }
+  
+  result = c(n_p,need_to_wait,mean(state$waiting_time),state$leaving_time[n_p])
+  return(result)
+}
+
+result = myfun(lambda = 0.1, min_serve_time = 5, max_serve_time =  20, server_number = 3, total_time = 420)
+
+print("How many patients came to the office?")
+print(result[1])
+print("How many had to wait for a doctor?")
+print(result[2])
+print("What was their average wait?")
+print(result[3])
+print("When did the office close?")
+print(result[4])
+```
+
